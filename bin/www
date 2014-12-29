@@ -1,0 +1,42 @@
+#!/usr/bin/env node
+var fs = require('fs');
+var path = require('path');
+var debug = require('debug')('mingle');
+var express = require('express');
+var app = require('../app');
+var gaze = require('gaze');
+var argv = require('minimist')(process.argv.slice(2));
+var _ = require('lodash');
+
+console.log(argv);
+
+app.set('port', process.env.PORT || 3000);
+
+
+var server = app.listen(app.get('port'), function() {
+  debug('Express server listening on port ' + server.address().port);
+});
+
+var io = require('socket.io')(server);
+io.on('connection', function (socket) {
+  fs.readdir(argv.pics, function(err, files) {
+    files = _.reject(files, function(file) {
+      return /^\./.test(file);
+    });
+    socket.emit('pics', files);
+  });
+});
+
+gaze(['**/*'], {cwd: argv.pics}, function(err, watcher) {
+  // Files have all started watching
+  // watcher === this
+
+  this.on('added', function(filepath) {
+    console.log(filepath + ' was added');
+    io.emit('pic', path.basename(filepath));
+  });
+
+  this.relative(function(err, files) {
+    console.log(files);
+  });
+});

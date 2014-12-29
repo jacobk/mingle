@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>{{title}}</title>
+  <script src="/bower_components/jquery/dist/jquery.js"></script>
+  <script src="/bower_components/jquery-qrcode/jquery.qrcode.min.js"></script>
+  <script>
+  $(function() {
+    $('#gallery-code').qrcode({
+        "width": 300,
+        "height": 300,
+        "color": "#3a3",
+        "text": "{{publicUrl}}/gallery"
+    });
+  });
+  </script>
+</head>
+<body>
+<h1>{{title}}</h1>
+<a href="/theatre">Theatre</a>
+<a href="/gallery">Gallery</a>
+<a href="/shoot">Shoot (secret)</a>
+<a href="/users">Users</a>
+<div id="gallery-code"></div>
+
+</body>
+</html>

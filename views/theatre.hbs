@@ -1,0 +1,170 @@
+<html>
+  <head>
+    <title>{{title}}</title>
+    <script src="/bower_components/jquery/dist/jquery.js"></script>
+    <script src="/bower_components/jquery-qrcode/jquery.qrcode.min.js"></script>
+    <script src="/bower_components/lodash/dist/lodash.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      var $currentSlide, $slideA, $slideB;
+      var pics, scheduler, idx, nextPic;
+      var images = new Array();
+
+      function rand(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+      }
+
+      function nextSlide() {
+        return $currentSlide === $slideA ? $slideB : $slideA;
+      }
+
+      function show(slide) {
+        slide.one('webkitAnimationEnd', function(evt) {
+          var $elm = $(evt.target);
+          $elm.removeClass('in');
+          $elm.removeClass($elm.data('trans-name'));
+          console.log('Ending animation for', $elm.css("background-image"));
+          $elm.css("background-image", "none");
+        });
+        var transitionName = randomTransition();
+        console.log('Showing with transition', transitionName);
+        slide.data('trans-name', transitionName);
+        slide.addClass(transitionName);
+        slide.addClass('in');
+        $currentSlide = slide;
+      }
+
+      function randomTransition() {
+        var transitions = ['cw3', 'ccw3'];
+        return transitions[rand(0, transitions.length-1)];
+      }
+
+      function changePicture() {
+        var fileName;
+        console.log('Changing picture');
+        if (nextPic) {
+          console.log('New pic prioritized');
+          fileName = nextPic;
+          nextPic = null;
+        } else {
+          idx = rand(0, pics.length-1);
+          fileName = pics[idx];
+        }
+        var imgSrc = "/pics/" + fileName;
+        console.log('New pick path', imgSrc);
+        var image = new Image();
+        image.onload = function() {
+          console.log('Loaded', imgSrc);
+          var $next = nextSlide();
+          $next.css("background-image", "url(" + imgSrc + ")");
+          show($next);
+        };
+        console.log('Loading image', imgSrc);
+        image.src = imgSrc;
+      }
+
+      $(function() {
+        $slideA = $('#slideA');
+        $slideB = $('#slideB');
+        $currentSlide = $slideB;
+        var socket = io.connect();
+        socket.on('pics', function(data) {
+          console.log(data);
+          pics = data;
+          changePicture();
+          scheduler = setInterval(changePicture, 10000);
+        });
+
+        socket.on('pic', function(filename) {
+          console.log('Got new pic', filename);
+          pics.push(filename);
+          console.log('Pic count', pics.length);
+          nextPic = filename;
+        });
+
+        $('#gallery-code').qrcode({
+            "width": 150,
+            "height": 150,
+            "color": "#3a3",
+            "text": "{{publicUrl}}/gallery"
+        });
+      });
+    </script>
+    <style type="text/css">
+      body {
+          overflow:hidden;
+      }
+
+      .slide {
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0px;
+        left: 0px;
+        background-size: cover;
+        background-position: 50% 50%;
+        background-repeat: none;
+      }
+
+      .slide.in {
+        -webkit-animation-duration: 12s;
+        -webkit-animation-timing-function: linear;
+      }
+
+      .cw3 {
+        -webkit-animation-name: rotateCW3;
+      }
+      .ccw3 {
+        -webkit-animation-name: rotateCCW3;
+      }
+
+      @-webkit-keyframes rotateCW3 {
+        0% {
+            opacity: 0;
+            -webkit-animation-timing-function: ease-in;
+        }
+        10% {
+            opacity: 1;
+        }
+        90% {
+            opacity: 1;
+        }
+        100% {
+            opacity: 0;
+            -webkit-animation-timing-function: ease-out;
+            -webkit-transform: scale(1.1) rotate(3deg);
+        }
+      }
+
+      @-webkit-keyframes rotateCCW3 {
+        0% {
+            opacity: 0;
+            -webkit-animation-timing-function: ease-in;
+        }
+        10% {
+            opacity: 1;
+        }
+        90% {
+            opacity: 1;
+        }
+        100% {
+            opacity: 0;
+            -webkit-animation-timing-function: ease-out;
+            -webkit-transform: scale(1.1) rotate(-3deg);
+        }
+      }
+
+      #gallery-code {
+        position: fixed;
+        top: 50px;
+        left: 50px;
+      }
+    </style>
+  </head>
+  <body>
+  <div id="slideA" class="slide"></div>
+  <div id="slideB" class="slide"></div>
+  <div id="gallery-code"></div>
+
+  </body>
+</html>

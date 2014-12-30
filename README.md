@@ -9,6 +9,7 @@ Filesystem based live updating slideshow with browsable gallery.
 
 ```bash
 git clone https://github.com/jacobk/mingle.git
+cd mingle
 DEBUG=mingle ./bin/www --pics=<existing and future pics> --url=<url server will be discoverable at>
 ```
 
